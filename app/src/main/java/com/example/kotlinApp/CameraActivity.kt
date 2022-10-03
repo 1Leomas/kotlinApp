@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -29,8 +30,6 @@ class CameraActivity : AppCompatActivity() {
 
     private var imageCapture: ImageCapture? = null
 
-    private var videoCapture: VideoCapture? = null
-
     private lateinit var outputDirectory: File
 
     private var cameraControl: CameraControl? = null
@@ -38,6 +37,8 @@ class CameraActivity : AppCompatActivity() {
     private var cameraInfo: CameraInfo? = null
 
     private var lastImagePath: String = ""
+
+    private var lensFacing = CameraSelector.LENS_FACING_BACK
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,10 +60,24 @@ class CameraActivity : AppCompatActivity() {
             takePicture()
         }
 
+        binding.switchCam.setOnClickListener {
+            lensFacing = if (CameraSelector.LENS_FACING_FRONT == lensFacing) {
+                CameraSelector.LENS_FACING_BACK
+            } else {
+                CameraSelector.LENS_FACING_FRONT
+            }
+            startCamera()
+        }
+
         binding.galaryButton.setOnClickListener{
             if(lastImagePath.length > 1){
+
+                val data = ArrayList<String>()
+                data.add(lastImagePath)
+                data.add(lensFacing.toString())
+
                 val intent = Intent(this, PhotoGalaryActivity::class.java).apply {
-                    putExtra(EXTRA_MESSAGE, lastImagePath)
+                    putStringArrayListExtra(EXTRA_MESSAGE, data)
                 }
                 lastImagePath = ""
                 startActivity(intent)
@@ -94,9 +109,12 @@ class CameraActivity : AppCompatActivity() {
         ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
     }
 
+
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        val cameraSelector = CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+
+        val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+
         cameraProviderFuture.addListener({
             imagePreview = Preview.Builder().apply {
                 setTargetAspectRatio(AspectRatio.RATIO_16_9)
@@ -108,22 +126,24 @@ class CameraActivity : AppCompatActivity() {
                 setFlashMode(ImageCapture.FLASH_MODE_AUTO)
             }.build()
 
-            videoCapture = VideoCapture.Builder().apply {
-                setTargetAspectRatio(AspectRatio.RATIO_16_9)
-            }.build()
-
             val cameraProvider = cameraProviderFuture.get()
+
+            cameraProvider.unbindAll()
+
             val camera = cameraProvider.bindToLifecycle(
                 this,
                 cameraSelector,
                 imagePreview,
-                imageCapture,
-                videoCapture
+                imageCapture
             )
+
             binding.previewView.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+
             imagePreview?.setSurfaceProvider(binding.previewView.surfaceProvider)
             cameraControl = camera.cameraControl
             cameraInfo = camera.cameraInfo
+
+
         }, ContextCompat.getMainExecutor(this))
     }
 

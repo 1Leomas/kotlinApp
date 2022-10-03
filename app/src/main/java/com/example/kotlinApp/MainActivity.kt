@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
             val searchKey = searchInput.text.toString()
             val urlIntent = Intent(
                 Intent.ACTION_VIEW,
-                Uri.parse("https://www.google.com/search?q=" + searchKey)
+                Uri.parse("https://www.google.com/search?q=$searchKey")
             )
             startActivity(urlIntent)
         }
@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
 
             //In primul parametru indicam cat timp va tine timer-ul in milisecunde
             //Eu aici am pus o secunda
-            object : CountDownTimer(1000, 1000) {
+            object : CountDownTimer(3000, 1000) {
 
                 override fun onTick(millisUntilFinished: Long) { }
 
